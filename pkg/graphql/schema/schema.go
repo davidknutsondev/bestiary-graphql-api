@@ -1,10 +1,11 @@
-package main
+package schema
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 
+	"github.com/davidknutsondev/bestiary-graphql-api/pkg/models"
 	"github.com/graphql-go/graphql"
 )
 
@@ -24,16 +25,8 @@ func importJSONDataFromFile(fileName string, result interface{}) (isOK bool) {
 	return
 }
 
-var BeastList []Beast
+var BeastList []models.Beast
 var _ = importJSONDataFromFile("./beastData.json", &BeastList)
-
-type Beast struct {
-	ID          int      `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	OtherNames  []string `json:"otherNames"`
-	ImageURL    string   `json:"imageUrl"`
-}
 
 // define custom GraphQL ObjectType `beastType` for our Golang struct `Beast`
 // Note that
@@ -97,7 +90,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 
 				// perform mutation operation here
 				// for e.g. create a Beast and save to DB.
-				newBeast := Beast{
+				newBeast := models.Beast{
 					ID:          newID,
 					Name:        name,
 					Description: description,
@@ -135,7 +128,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				id, _ := params.Args["id"].(int)
-				affectedBeast := Beast{}
+				affectedBeast := models.Beast{}
 
 				// Search list for beast with id
 				for i := 0; i < len(BeastList); i++ {
@@ -189,7 +182,7 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 					}
 				}
 
-				return Beast{}, nil
+				return models.Beast{}, nil
 			},
 		},
 
