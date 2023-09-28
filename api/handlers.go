@@ -1,20 +1,29 @@
 package api
 
 import (
+	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/davidknutsondev/bestiary-graphql-api/pkg/graphql/schema" // Update with the correct import path
 	"github.com/graphql-go/handler"
 )
 
-var schemaHandler = handler.New(&handler.Config{
-	Schema:   &schema.BeastSchema,
-	Pretty:   true,
-	GraphiQL: false,
-})
+func GraphQLHandler(db *sql.DB) http.HandlerFunc {
 
-func GraphQLHandler(w http.ResponseWriter, r *http.Request) {
-	schemaHandler.ServeHTTP(w, r)
+	schemaHandler := handler.New(&handler.Config{
+		Schema:   &schema.BeastSchema,
+		Pretty:   true,
+		GraphiQL: false,
+	})
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// You can access the database connection 'db' here
+		// Create a context, perform database operations, and pass it to your resolvers
+		ctx := context.WithValue(r.Context(), "db", db)
+		r = r.WithContext(ctx)
+		schemaHandler.ServeHTTP(w, r)
+	}
 }
 
 func SandboxHandler(w http.ResponseWriter, r *http.Request) {
