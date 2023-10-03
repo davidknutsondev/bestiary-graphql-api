@@ -3,6 +3,7 @@ package schema
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 
@@ -167,23 +168,43 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 			Type:        beastType,
 			Description: "Get single beast",
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{
-					Type: graphql.String,
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.Int,
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-				nameQuery, isOK := params.Args["name"].(string)
-				if isOK {
-					// Search for el with name
-					for _, beast := range BeastList {
-						if beast.Name == nameQuery {
-							return beast, nil
-						}
-					}
+				ctx := p.Context
+				db := ctx.Value("db").(*sql.DB)
+
+				// Check if an "id" argument is provided in the GraphQL query.
+				id, ok := p.Args["id"].(int) // Assuming the ID is of type int
+
+				if !ok {
+					return nil, errors.New("ID argument is missing or invalid")
 				}
 
-				return models.Beast{}, nil
+				// Query the database for a specific beast by its ID.
+				query := "SELECT id, name, description, otherNames, imageURL FROM beasts WHERE id = $1"
+				row := db.QueryRow(query, id)
+
+				var beast models.Beast
+				err := row.Scan(
+					&beast.ID,
+					&beast.Name,
+					&beast.Description,
+					&beast.OtherNames,
+					&beast.ImageURL,
+				)
+
+				if err != nil {
+					if err == sql.ErrNoRows {
+						return nil, errors.New("Beast not found")
+					}
+					return nil, err
+				}
+
+				return beast, nil
 			},
 		},
 
