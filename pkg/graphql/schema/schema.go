@@ -54,8 +54,6 @@ var beastType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-var currentMaxId = 5
-
 // root mutation
 var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 	Name: "RootMutation",
@@ -77,37 +75,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-
-				// marshall and cast the argument value
-				name, _ := params.Args["name"].(string)
-				description, _ := params.Args["description"].(string)
-				otherNames, _ := params.Args["otherNames"].([]string)
-				imageUrl, _ := params.Args["imageUrl"].(string)
-
-				// figure out new id
-				newID := currentMaxId + 1
-				currentMaxId = currentMaxId + 1
-
-				// perform mutation operation here
-				// for e.g. create a Beast and save to DB.
-				newBeast := models.Beast{
-					ID:          newID,
-					Name:        name,
-					Description: description,
-					OtherNames:  otherNames,
-					ImageURL:    imageUrl,
-				}
-
-				BeastList = append(BeastList, newBeast)
-
-				// return the new Beast object that we supposedly save to DB
-				// Note here that
-				// - we are returning a `Beast` struct instance here
-				// - we previously specified the return Type to be `beastType`
-				// - `Beast` struct maps to `beastType`, as defined in `beastType` ObjectConfig`
-				return newBeast, nil
-			},
+			Resolve: resolvers.AddBeastResolver,
 		},
 		"updateBeast": &graphql.Field{
 			Type:        beastType, // the return type for this field
