@@ -1,12 +1,11 @@
 package schema
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 
+	"github.com/davidknutsondev/bestiary-graphql-api/pkg/graphql/resolvers"
 	"github.com/davidknutsondev/bestiary-graphql-api/pkg/models"
 	"github.com/graphql-go/graphql"
 )
@@ -172,78 +171,13 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-
-				ctx := p.Context
-				db := ctx.Value("db").(*sql.DB)
-
-				// Check if an "id" argument is provided in the GraphQL query.
-				id, ok := p.Args["id"].(int) // Assuming the ID is of type int
-
-				if !ok {
-					return nil, errors.New("ID argument is missing or invalid")
-				}
-
-				// Query the database for a specific beast by its ID.
-				query := "SELECT id, name, description, otherNames, imageURL FROM beasts WHERE id = $1"
-				row := db.QueryRow(query, id)
-
-				var beast models.Beast
-				err := row.Scan(
-					&beast.ID,
-					&beast.Name,
-					&beast.Description,
-					&beast.OtherNames,
-					&beast.ImageURL,
-				)
-
-				if err != nil {
-					if err == sql.ErrNoRows {
-						return nil, errors.New("Beast not found")
-					}
-					return nil, err
-				}
-
-				return beast, nil
-			},
+			Resolve: resolvers.GetBeastResolver,
 		},
 
 		"beastList": &graphql.Field{
 			Type:        graphql.NewList(beastType),
 			Description: "List of beasts",
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-
-				ctx := p.Context
-				db := ctx.Value("db").(*sql.DB)
-
-				rows, err := db.Query("SELECT id, name, description, otherNames, imageURL FROM beasts")
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-
-				var beasts []models.Beast
-				for rows.Next() {
-					var beast models.Beast
-					err := rows.Scan(
-						&beast.ID,
-						&beast.Name,
-						&beast.Description,
-						&beast.OtherNames,
-						&beast.ImageURL,
-					)
-					if err != nil {
-						return nil, err
-					}
-					beasts = append(beasts, beast)
-				}
-
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-
-				return beasts, nil
-			},
+			Resolve:     resolvers.GetBeastListResolver,
 		},
 	},
 })
