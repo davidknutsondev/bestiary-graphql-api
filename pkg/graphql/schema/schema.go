@@ -95,33 +95,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				id, _ := params.Args["id"].(int)
-				affectedBeast := models.Beast{}
-
-				// Search list for beast with id
-				for i := 0; i < len(BeastList); i++ {
-					if BeastList[i].ID == id {
-						if _, ok := params.Args["description"]; ok {
-							BeastList[i].Description = params.Args["description"].(string)
-						}
-						if _, ok := params.Args["name"]; ok {
-							BeastList[i].Name = params.Args["name"].(string)
-						}
-						if _, ok := params.Args["imageUrl"]; ok {
-							BeastList[i].ImageURL = params.Args["imageUrl"].(string)
-						}
-						if _, ok := params.Args["otherNames"]; ok {
-							BeastList[i].OtherNames = params.Args["otherNames"].([]string)
-						}
-						// Assign updated beast so we can return it
-						affectedBeast = BeastList[i]
-						break
-					}
-				}
-				// Return affected beast
-				return affectedBeast, nil
-			},
+			Resolve: resolvers.UpdateBeastResolver,
 		},
 	},
 })
